@@ -1,0 +1,20 @@
+{
+  "name": "Cuaderno v0",
+  "cards": [
+    { "id": "faro", "word": "el faro", "partOfSpeech": "noun", "scene": "🌊🚨⛵", "icon": "🚨" },
+    { "id": "muchedumbre", "word": "la muchedumbre", "partOfSpeech": "noun", "scene": "🏟️👥🎤", "icon": "👥", "confusableWith": ["cosecha"] },
+    { "id": "cosecha", "word": "la cosecha", "partOfSpeech": "noun", "scene": "🌾👨‍🌾🧺", "icon": "🌾", "confusableWith": ["muchedumbre"] },
+    { "id": "madrugar", "word": "madrugar", "partOfSpeech": "verb", "scene": "🌅⏰🥱", "icon": "⏰", "confusableWith": ["bostezo"] },
+    { "id": "caber", "word": "caber", "partOfSpeech": "verb", "scene": "🚕👨‍👩‍👧‍👦🧳", "icon": "🚕", "confusableWith": ["apretar"] },
+    { "id": "chubasco", "word": "el chubasco", "partOfSpeech": "noun", "scene": "⛈️☔🌊", "icon": "⛈️", "confusableWith": ["escalofrio"] },
+    { "id": "derramar", "word": "derramar", "partOfSpeech": "verb", "scene": "🥛💦😬", "icon": "💦", "confusableWith": ["apretar"] },
+    { "id": "bostezo", "word": "el bostezo", "partOfSpeech": "noun", "scene": "🥱😴🛏️", "icon": "🥱", "confusableWith": ["susurro", "masticar"] },
+    { "id": "masticar", "word": "masticar", "partOfSpeech": "verb", "scene": "🦷🍖😋", "icon": "🦷", "confusableWith": ["bostezo"] },
+    { "id": "arruga", "word": "la arruga", "partOfSpeech": "noun", "scene": "👵🧴〰️", "icon": "〰️", "confusableWith": ["telarana"] },
+    { "id": "hormigueo", "word": "el hormigueo", "partOfSpeech": "noun", "scene": "🐜🐜🦶", "icon": "🐜", "confusableWith": ["escalofrio"] },
+    { "id": "apretar", "word": "apretar", "partOfSpeech": "verb", "scene": "✊🔧😣", "icon": "✊", "confusableWith": ["caber", "derramar"] },
+    { "id": "escalofrio", "word": "el escalofrío", "partOfSpeech": "noun", "scene": "🥶❄️😨", "icon": "🥶", "confusableWith": ["hormigueo", "chubasco"] },
+    { "id": "telarana", "word": "la telaraña", "partOfSpeech": "noun", "scene": "🕸️🕷️🏚️", "icon": "🕸️", "confusableWith": ["arruga"] },
+    { "id": "susurro", "word": "el susurro", "partOfSpeech": "noun", "scene": "🤫👂🌙", "icon": "🤫", "confusableWith": ["bostezo"] }
+  ]
+}
