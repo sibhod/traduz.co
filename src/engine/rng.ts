@@ -2,6 +2,10 @@
  *  so tests are deterministic and runs are replayable. */
 export type Rng = () => number;
 
+/**
+ * Creates a Mulberry32 PRNG seeded with the given value.
+ * Note: the seed is truncated to uint32 via `>>> 0` before use.
+ */
 export function mulberry32(seed: number): Rng {
   let a = seed >>> 0;
   return () => {
@@ -29,6 +33,7 @@ export function pick<T>(arr: readonly T[], rng: Rng): T {
 export function weightedPick<T>(items: readonly T[], weight: (t: T) => number, rng: Rng): T {
   if (items.length === 0) throw new Error('weightedPick: empty array');
   const total = items.reduce((s, it) => s + weight(it), 0);
+  if (total <= 0) throw new Error('weightedPick: total weight must be > 0');
   let roll = rng() * total;
   for (const it of items) {
     roll -= weight(it);

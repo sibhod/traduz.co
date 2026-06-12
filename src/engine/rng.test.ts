@@ -23,11 +23,19 @@ describe('rng', () => {
     expect(out).toHaveLength(5);
     expect([...out].sort()).toEqual([1, 2, 3, 4, 5]);
     expect(input).toEqual([1, 2, 3, 4, 5]);
+    // must not be the identity permutation
+    expect(out).not.toEqual([1, 2, 3, 4, 5]);
+    // deterministic anchor: known output for seed 1
+    expect(out).toEqual([5, 3, 2, 1, 4]);
   });
 
   it('pick returns an element of the array', () => {
     const arr = ['a', 'b', 'c'];
     expect(arr).toContain(pick(arr, mulberry32(3)));
+  });
+
+  it('pick throws on empty array', () => {
+    expect(() => pick([], mulberry32(0))).toThrow(/empty/i);
   });
 
   it('weightedPick respects weights', () => {
@@ -37,6 +45,12 @@ describe('rng', () => {
       const got = weightedPick(['a', 'b'], (x) => (x === 'a' ? 3 : 1), rng);
       counts[got as 'a' | 'b']++;
     }
-    expect(counts.a).toBeGreaterThan(counts.b * 2); // ~3:1 with slack
+    // true ratio 3:1 → a ≈ 75%; allow generous slack
+    expect(counts.a / 2000).toBeGreaterThan(0.68);
+    expect(counts.a / 2000).toBeLessThan(0.82);
+  });
+
+  it('weightedPick throws when total weight is not positive', () => {
+    expect(() => weightedPick(['a', 'b'], () => 0, mulberry32(1))).toThrow(/total weight/i);
   });
 });
