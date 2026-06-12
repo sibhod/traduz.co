@@ -18,4 +18,4 @@ import seedJson from './content/seed-deck.json';
     v.y = 500;
     root.addChild(v);
   });
-})();
+})().catch(console.error);

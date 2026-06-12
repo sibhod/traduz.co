@@ -16,7 +16,7 @@ function sigilFor(id: string): { color: number; sides: number } {
     return Math.round(255 * (0.55 - 0.35 * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
   };
   const color = (f(0) << 16) | (f(8) << 8) | f(4);
-  return { color, sides: 3 + (h % 4) }; // triangle..hexagon
+  return { color, sides: 3 + ((h >>> 9) % 4) }; // triangle..hexagon
 }
 
 function drawSigil(g: Graphics, id: string, cx: number, cy: number, r: number): void {
@@ -51,6 +51,8 @@ export function makeCardView(card: CardDef, level: 0 | 1 | 2): Container {
     art.anchor.set(0.5);
     art.x = CARD_W / 2;
     art.y = CARD_H / 2 - 10;
+    // Wide emoji clusters (ZWJ families, flags) can exceed the card face — clamp.
+    if (art.width > CARD_W - 12) art.scale.set((CARD_W - 12) / art.width);
     c.addChild(art);
   }
 
