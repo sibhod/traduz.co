@@ -6,6 +6,7 @@ import type { Rng } from '../engine/rng';
 import { CONFIG } from '../engine/config';
 import { makeCardView, CARD_W, CARD_H } from './cardView';
 import { VW, VH } from './layout';
+import { tween } from './juice';
 
 export interface CombatCallbacks {
   /** Fired for every engine event so juice/sfx/mastery can react (Tasks 10-11). */
@@ -101,7 +102,7 @@ export class CombatScene {
     }
   }
 
-  /** Full redraw of dynamic parts. Spartan but correct; tween polish is Task 10. */
+  /** Full redraw of dynamic parts. Spartan but correct full redraw; events drive the juice layer. */
   private render(): void {
     this.renderBars();
     this.renderBubbles();
@@ -184,8 +185,10 @@ export class CombatScene {
           this.dispatch(playCard(this.state, this.deck, cardId, this.rng));
         });
       }
-      // highlight the card awaiting its challenge
-      if (this.state.pending?.cardId === cardId) v.y -= 24;
+      // raise the card awaiting its challenge — quick ease-out pop
+      if (this.state.pending?.cardId === cardId) {
+        tween(v, { y: HAND_Y - 24 }, 140);
+      }
       this.handLayer.addChild(v);
     });
   }
