@@ -39,6 +39,19 @@ describe('loadDeck', () => {
   it('looks up cards by id', () => {
     const deck = loadDeck(seedJson);
     expect(deck.byId('caber').word).toBe('caber');
+    expect(deck.byId('faro').word).toBe('el faro'); // noun: article included
     expect(() => deck.byId('nope')).toThrow(/unknown card/i);
+  });
+
+  it('rejects invalid partOfSpeech values', () => {
+    const [a, b, c, d] = seedJson.cards;
+    const bad = { name: 'x', cards: [{ ...a, partOfSpeech: 'Verb' }, b, c, d] };
+    expect(() => loadDeck(bad)).toThrow(/invalid partOfSpeech/i);
+  });
+
+  it('rejects self-referencing confusableWith', () => {
+    const [a, b, c, d] = seedJson.cards;
+    const bad = { name: 'x', cards: [{ ...a, confusableWith: [a.id] }, b, c, d] };
+    expect(() => loadDeck(bad)).toThrow(/itself/i);
   });
 });
