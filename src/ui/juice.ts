@@ -15,6 +15,7 @@ export function tween<T extends Record<string, any>>(
   for (const k of Object.keys(to)) from[k] = obj[k as keyof T] as number;
   let elapsed = 0;
   const tick = (ticker: Ticker) => {
+    if ((obj as any).destroyed) { Ticker.shared.remove(tick); return; }
     elapsed += ticker.deltaMS;
     const t = Math.min(1, elapsed / ms);
     const e = ease(t);
@@ -35,6 +36,7 @@ export function shake(target: Container, intensity = 12, durationMs = 250): void
   const baseX = target.x;
   const baseY = target.y;
   const tick = (ticker: Ticker) => {
+    if (target.destroyed) { Ticker.shared.remove(tick); return; }
     elapsed += ticker.deltaMS;
     const decay = 1 - elapsed / durationMs;
     if (decay <= 0) {

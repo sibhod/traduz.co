@@ -75,6 +75,12 @@ import { sfx, speakSpanish } from './ui/sfx';
         case 'defeat':
           sfx.defeat();
           break;
+        case 'cardPlayed':
+          break; // card raise is rendered by the scene; no juice needed
+        default: {
+          const exhaustive: never = e;
+          void exhaustive;
+        }
       }
     }
   }
