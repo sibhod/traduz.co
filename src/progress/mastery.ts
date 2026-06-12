@@ -12,15 +12,18 @@ export function masteryFor(map: MasteryMap, cardId: string): CardMastery {
   return map[cardId] ?? { progress: 0, flagged: false };
 }
 
+const [THRESHOLD_L1, THRESHOLD_L2] = LEVEL_THRESHOLDS;
+
 export function levelOf(m: CardMastery): 0 | 1 | 2 {
-  if (m.progress >= LEVEL_THRESHOLDS[1]) return 2;
-  if (m.progress >= LEVEL_THRESHOLDS[0]) return 1;
+  if (m.progress >= THRESHOLD_L2) return 2;
+  if (m.progress >= THRESHOLD_L1) return 1;
   return 0;
 }
 
 export function recordResult(map: MasteryMap, cardId: string, correct: boolean): void {
   const m = masteryFor(map, cardId);
+  const progress = typeof m.progress === 'number' && Number.isFinite(m.progress) ? m.progress : 0;
   map[cardId] = correct
-    ? { progress: m.progress + 1, flagged: false }
-    : { progress: Math.max(0, m.progress - 1), flagged: true };
+    ? { progress: progress + 1, flagged: false }
+    : { progress: Math.max(0, progress - 1), flagged: true };
 }

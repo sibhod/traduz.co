@@ -32,12 +32,19 @@ describe('mastery', () => {
     recordResult(map, 'caber', false);
     expect(map.caber).toEqual({ progress: 0, flagged: true });
     recordResult(map, 'caber', false);
-    expect(map.caber.progress).toBe(0); // floored
+    expect(map.caber).toEqual({ progress: 0, flagged: true }); // floored and still flagged
   });
 
   it('recordResult creates entries for unseen cards', () => {
     const map: MasteryMap = {};
     recordResult(map, 'faro', true);
     expect(map.faro).toEqual({ progress: 1, flagged: false });
+  });
+
+  it('recordResult coerces tampered non-number progress to 0 before arithmetic', () => {
+    const map: MasteryMap = { x: { progress: '2' as unknown as number, flagged: false } };
+    recordResult(map, 'x', true);
+    expect(map.x.progress).toBe(1); // 0 (coerced from '2') + 1 = 1
+    expect(typeof map.x.progress).toBe('number');
   });
 });

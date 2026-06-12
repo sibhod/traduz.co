@@ -27,4 +27,29 @@ describe('mastery store', () => {
     const store = memStore({ [MASTERY_KEY]: '{not json' });
     expect(loadMastery(store)).toEqual({});
   });
+
+  it('returns empty map when stored value parses to null', () => {
+    const store = memStore({ [MASTERY_KEY]: 'null' });
+    expect(loadMastery(store)).toEqual({});
+  });
+
+  it('returns empty map when stored value parses to an array', () => {
+    const store = memStore({ [MASTERY_KEY]: '[1,2]' });
+    expect(loadMastery(store)).toEqual({});
+  });
+
+  it('returns empty map when stored value parses to a string', () => {
+    const store = memStore({ [MASTERY_KEY]: '"hi"' });
+    expect(loadMastery(store)).toEqual({});
+  });
+
+  it('does not throw when setItem throws (e.g. QuotaExceededError)', () => {
+    const throwingStore: StringStore = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
+    };
+    expect(() => saveMastery(throwingStore, {})).not.toThrow();
+  });
 });
