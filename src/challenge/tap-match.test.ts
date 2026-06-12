@@ -23,12 +23,25 @@ describe('buildTapChallenge', () => {
   });
 
   it('falls back to same part of speech, then anything', () => {
-    // faro (noun, no confusableWith): all distractors should be deck words, none = faro
+    // faro (noun, no confusableWith): all distractors should be nouns (seed deck has >=3 other nouns)
     const ch = buildTapChallenge(deck, 'faro', mulberry32(3));
     const distractors = ch.options.filter((o) => o !== 'el faro');
     expect(distractors).toHaveLength(3);
-    const words = new Set(deck.cards.map((c) => c.word));
-    expect(distractors.every((d) => words.has(d))).toBe(true);
+    const byWord = new Map(deck.cards.map((c) => [c.word, c]));
+    expect(distractors.every((d) => byWord.get(d)?.partOfSpeech === 'noun')).toBe(true);
+  });
+
+  it('discards excess confusables beyond the distractor slots', () => {
+    // escalofrio lists 2 confusables; synthetic card with 4 ensures clean truncation
+    const cards = deck.cards.map((c) =>
+      c.id === 'escalofrio'
+        ? { ...c, confusableWith: ['hormigueo', 'chubasco', 'bostezo', 'susurro'] }
+        : c,
+    );
+    const bigDeck = loadDeck({ name: 'x', cards });
+    const ch = buildTapChallenge(bigDeck, 'escalofrio', mulberry32(5));
+    expect(ch.options).toHaveLength(OPTION_COUNT);
+    expect(new Set(ch.options).size).toBe(OPTION_COUNT);
   });
 
   it('shuffles option order across seeds', () => {

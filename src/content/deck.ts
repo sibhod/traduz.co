@@ -16,6 +16,7 @@ export function loadDeck(raw: unknown): Deck {
     throw new Error(`deck: needs at least ${MIN_CARDS} cards, got ${def.cards.length}`);
   }
   const ids = new Set<string>();
+  const words = new Set<string>();
   for (const c of def.cards) {
     if (!c.id || !c.word || !c.scene || !c.icon) {
       throw new Error(`deck: card missing required field: ${JSON.stringify(c)}`);
@@ -27,6 +28,8 @@ export function loadDeck(raw: unknown): Deck {
     }
     if (ids.has(c.id)) throw new Error(`deck: duplicate card id '${c.id}'`);
     ids.add(c.id);
+    if (words.has(c.word)) throw new Error(`deck: duplicate display word '${c.word}'`);
+    words.add(c.word);
   }
   for (const c of def.cards) {
     for (const ref of c.confusableWith ?? []) {

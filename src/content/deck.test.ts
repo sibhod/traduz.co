@@ -54,4 +54,11 @@ describe('loadDeck', () => {
     const bad = { name: 'x', cards: [{ ...a, confusableWith: [a.id] }, b, c, d] };
     expect(() => loadDeck(bad)).toThrow(/itself/i);
   });
+
+  it('rejects duplicate display words across distinct ids', () => {
+    const [a, b, c, d] = seedJson.cards;
+    // b is caber; the clone gets a new id but keeps word 'caber' — deck now has two 'caber' words
+    const bad = { name: 'x', cards: [a, b, { ...b, id: 'caber2', confusableWith: [] }, c, d] };
+    expect(() => loadDeck(bad)).toThrow(/duplicate display word/i);
+  });
 });
