@@ -10,6 +10,8 @@ import { CONFIG } from './engine/config';
 import { mulberry32 } from './engine/rng';
 import { loadMastery } from './progress/store';
 import { levelOf, masteryFor } from './progress/mastery';
+import { shake, floatNumber } from './ui/juice';
+import { sfx, speakSpanish } from './ui/sfx';
 
 (async () => {
   const app = new Application();
@@ -35,10 +37,45 @@ import { levelOf, masteryFor } from './progress/mastery';
     rng,
   });
   const callbacks = {
-    onEvents: (events: CombatEvent[]) => console.log(events),
+    onEvents: (events: CombatEvent[]) => handleEvents(events),
     onCombatEnd: (victory: boolean) => alert(victory ? '¡Victoria!' : 'Derrota...'),
   };
   const scene = new CombatScene(state, deck, rng, callbacks, (cardId) => levelOf(masteryFor(mastery, cardId)));
   root.addChild(scene.view);
-  callbacks.onEvents(initialEvents); // opening deal reaches juice hooks (Task 10)
+  callbacks.onEvents(initialEvents); // opening deal reaches juice hooks
+
+  function handleEvents(events: CombatEvent[]): void {
+    for (const e of events) {
+      switch (e.type) {
+        case 'challengePassed': {
+          sfx.hit();
+          speakSpanish(deck.byId(e.cardId).word);
+          shake(scene.shakeLayer, 14, 280);
+          floatNumber(scene.view, 360, 320, `-${e.damage}`, 0xffdd44);
+          break;
+        }
+        case 'challengeFailed': {
+          sfx.fizzle();
+          speakSpanish(e.correctWord); // hear what it *should* have been — the lesson lands
+          floatNumber(scene.view, 360, 320, e.correctWord, 0xff6666);
+          break;
+        }
+        case 'enemyAttack': {
+          sfx.enemyAttack();
+          shake(scene.shakeLayer, 10, 220);
+          floatNumber(scene.view, 170, 1000, `-${e.amount}`, 0xff4444);
+          break;
+        }
+        case 'cardsDrawn':
+          sfx.draw();
+          break;
+        case 'victory':
+          sfx.victory();
+          break;
+        case 'defeat':
+          sfx.defeat();
+          break;
+      }
+    }
+  }
 })().catch(console.error);
