@@ -34,8 +34,11 @@ export function advanceAfterVictory(run: RunState, playerHp: number): void {
   }
 }
 
+/** Up to CONFIG.rewardOfferCount reserve cards to offer. May return [] when the
+ *  reserve is exhausted — the UI must ALWAYS offer 'heal' as a separate option. */
 export function rewardOptions(run: RunState, rng: Rng): string[] {
-  return shuffle(run.reserveIds, rng).slice(0, 3);
+  if (run.phase !== 'reward') throw new Error(`rewardOptions: wrong phase '${run.phase}'`);
+  return shuffle(run.reserveIds, rng).slice(0, CONFIG.rewardOfferCount);
 }
 
 /** choice: a reserve card id to add to the deck, or 'heal'. Starts the next fight. */
@@ -44,8 +47,9 @@ export function applyReward(run: RunState, choice: string | 'heal'): void {
   if (choice === 'heal') {
     run.playerHp = Math.min(CONFIG.playerMaxHp, run.playerHp + CONFIG.rewardHeal);
   } else {
-    if (!run.reserveIds.includes(choice)) throw new Error(`applyReward: '${choice}' not in reserve`);
-    run.reserveIds.splice(run.reserveIds.indexOf(choice), 1);
+    const idx = run.reserveIds.indexOf(choice);
+    if (idx === -1) throw new Error(`applyReward: '${choice}' not in reserve`);
+    run.reserveIds.splice(idx, 1);
     run.deckCardIds.push(choice);
   }
   run.fightIndex += 1;

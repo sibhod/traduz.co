@@ -8,6 +8,7 @@ export const CONFIG = {
   fizzleSelfDamage: 2, // the counter-hit on a failed recall
   flaggedDrawWeight: 3, // flagged words 3x more likely to be drawn
   rewardHeal: 5,
+  rewardOfferCount: 3, // reserve cards offered per reward screen
   startingDeckSize: 10, // remaining seed cards form the reward reserve
   fights: [
     { name: 'Duendecillo', emoji: '👹', hp: 18, attack: 4 },

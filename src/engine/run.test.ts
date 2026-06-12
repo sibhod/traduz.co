@@ -63,4 +63,27 @@ describe('run', () => {
     markDefeat(run);
     expect(run.phase).toBe('failed');
   });
+
+  it('applyReward outside reward phase throws', () => {
+    const run = startRun(deck, mulberry32(1));
+    expect(() => applyReward(run, 'heal')).toThrow(/wrong phase/i);
+  });
+
+  it('rewardOptions outside reward phase throws', () => {
+    const run = startRun(deck, mulberry32(1));
+    expect(() => rewardOptions(run, mulberry32(2))).toThrow(/wrong phase/i);
+  });
+
+  it('walks a full run: 3 fights, 2 rewards, complete', () => {
+    const run = startRun(deck, mulberry32(1));
+    advanceAfterVictory(run, 20);
+    applyReward(run, rewardOptions(run, mulberry32(2))[0]);
+    expect(run.fightIndex).toBe(1);
+    advanceAfterVictory(run, 15);
+    applyReward(run, 'heal');
+    expect(run.fightIndex).toBe(2);
+    expect(run.phase).toBe('combat');
+    advanceAfterVictory(run, 10);
+    expect(run.phase).toBe('complete');
+  });
 });
