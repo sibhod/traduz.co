@@ -9,15 +9,24 @@ describe('loadDeck', () => {
     expect(deck.cards.every((c) => c.scene.length > 0 && c.icon.length > 0)).toBe(true);
   });
 
+  // NOTE: these fixtures must pass the size guard (>= 4 cards) so they reach the
+  // check under test, and must not depend on seed-deck card ordering.
   it('rejects duplicate card ids', () => {
-    const bad = { name: 'x', cards: [seedJson.cards[0], seedJson.cards[0]] };
+    const [a, b, c] = seedJson.cards;
+    const bad = { name: 'x', cards: [a, b, c, a] };
     expect(() => loadDeck(bad)).toThrow(/duplicate/i);
   });
 
   it('rejects confusableWith references to unknown ids', () => {
+    const [a, b, c, d] = seedJson.cards;
     const bad = {
       name: 'x',
-      cards: [{ ...seedJson.cards[0], confusableWith: ['nope'] }],
+      cards: [
+        { ...a, confusableWith: ['nope'] },
+        { ...b, confusableWith: [] },
+        { ...c, confusableWith: [] },
+        { ...d, confusableWith: [] },
+      ],
     };
     expect(() => loadDeck(bad)).toThrow(/unknown/i);
   });
