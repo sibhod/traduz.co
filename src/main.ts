@@ -4,6 +4,7 @@ import { CombatScene } from './ui/combatScene';
 import { loadDeck } from './content/deck';
 import seedJson from './content/seed-deck.json';
 import { startCombat } from './engine/combat';
+import type { CombatEvent } from './engine/combat';
 import { startRun } from './engine/run';
 import { CONFIG } from './engine/config';
 import { mulberry32 } from './engine/rng';
@@ -25,7 +26,7 @@ import { levelOf, masteryFor } from './progress/mastery';
   const levels = Object.fromEntries(
     run.deckCardIds.map((id) => [id, levelOf(masteryFor(mastery, id))]),
   );
-  const { state } = startCombat({
+  const { state, events: initialEvents } = startCombat({
     cardIds: run.deckCardIds,
     levels,
     flagged: new Set(),
@@ -33,9 +34,11 @@ import { levelOf, masteryFor } from './progress/mastery';
     playerHp: run.playerHp,
     rng,
   });
-  const scene = new CombatScene(state, deck, rng, {
-    onEvents: (events) => console.log(events),
-    onCombatEnd: (victory) => alert(victory ? '¡Victoria!' : 'Derrota...'),
-  }, (cardId) => levelOf(masteryFor(mastery, cardId)));
+  const callbacks = {
+    onEvents: (events: CombatEvent[]) => console.log(events),
+    onCombatEnd: (victory: boolean) => alert(victory ? '¡Victoria!' : 'Derrota...'),
+  };
+  const scene = new CombatScene(state, deck, rng, callbacks, (cardId) => levelOf(masteryFor(mastery, cardId)));
   root.addChild(scene.view);
+  callbacks.onEvents(initialEvents); // opening deal reaches juice hooks (Task 10)
 })().catch(console.error);

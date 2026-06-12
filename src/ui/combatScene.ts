@@ -23,11 +23,13 @@ export class CombatScene {
   /** Exposed so juice can shake it (Task 10). */
   readonly shakeLayer = new Container();
 
+  private bars = new Container();
   private hud = new Container();
   private enemyArt!: Text;
   private bubbleLayer = new Container();
   private handLayer = new Container();
   private levelFor: (cardId: string) => 0 | 1 | 2;
+  private dispatching = false;
 
   constructor(
     private state: CombatState,
@@ -39,6 +41,7 @@ export class CombatScene {
     this.levelFor = levelFor;
     this.view.addChild(this.shakeLayer);
     this.shakeLayer.addChild(this.hud, this.bubbleLayer, this.handLayer);
+    this.hud.addChild(this.bars);
     this.buildEnemy();
     this.buildEndTurnButton();
     this.render();
@@ -83,11 +86,18 @@ export class CombatScene {
   }
 
   private dispatch(events: CombatEvent[]): void {
-    this.cb.onEvents(events);
-    this.render();
-    for (const e of events) {
-      if (e.type === 'victory') this.cb.onCombatEnd(true, this.state.playerHp);
-      if (e.type === 'defeat') this.cb.onCombatEnd(false, this.state.playerHp);
+    if (this.dispatching) return;
+    this.dispatching = true;
+    try {
+      this.cb.onEvents(events);
+      const terminal = events.find((e) => e.type === 'victory' || e.type === 'defeat');
+      if (terminal) {
+        this.cb.onCombatEnd(terminal.type === 'victory', this.state.playerHp);
+        return; // scene is about to be torn down — skip the dead render
+      }
+      this.render();
+    } finally {
+      this.dispatching = false;
     }
   }
 
@@ -98,10 +108,8 @@ export class CombatScene {
     this.renderHand();
   }
 
-  private bars = new Container();
   private renderBars(): void {
-    this.bars.removeChildren();
-    if (!this.bars.parent) this.hud.addChild(this.bars);
+    this.bars.removeChildren().forEach((c) => c.destroy({ children: true }));
 
     const bar = (x: number, y: number, w: number, frac: number, color: number, text: string) => {
       const g = new Graphics()
@@ -129,7 +137,7 @@ export class CombatScene {
   }
 
   private renderBubbles(): void {
-    this.bubbleLayer.removeChildren();
+    this.bubbleLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
     const pending = this.state.pending;
     if (!pending) return;
     // 2×2 thought-bubble grid around the enemy
@@ -141,7 +149,7 @@ export class CombatScene {
           .fill(0xf4f0e8)
           .stroke({ width: 3, color: 0xbbb29e }),
       );
-      const t = new Text({ text: word, style: { fontSize: 26, fill: 0x221c33, fontWeight: 'bold' } });
+      const t = new Text({ text: word, style: { fontSize: 26, fill: 0x221c33, fontWeight: 'bold', wordWrap: true, wordWrapWidth: BUBBLE_W - 16, align: 'center' } });
       t.anchor.set(0.5);
       t.x = BUBBLE_W / 2;
       t.y = BUBBLE_H / 2;
@@ -150,15 +158,18 @@ export class CombatScene {
       bub.y = ENEMY_Y + 170 + Math.floor(i / 2) * (BUBBLE_H + 18);
       bub.eventMode = 'static';
       bub.cursor = 'pointer';
-      bub.on('pointertap', () => this.dispatch(resolveChallenge(this.state, word)));
+      bub.on('pointertap', () => {
+        if (this.state.phase !== 'awaitChallenge') return;
+        this.dispatch(resolveChallenge(this.state, word));
+      });
       this.bubbleLayer.addChild(bub);
     });
   }
 
   private renderHand(): void {
-    this.handLayer.removeChildren();
+    this.handLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
     const n = this.state.hand.length;
-    const totalW = n * CARD_W + (n - 1) * 12;
+    const totalW = n * CARD_W + Math.max(0, n - 1) * 12;
     this.state.hand.forEach((cardId, i) => {
       const v = makeCardView(this.deck.byId(cardId), this.levelFor(cardId));
       v.x = VW / 2 - totalW / 2 + i * (CARD_W + 12);
@@ -168,7 +179,10 @@ export class CombatScene {
       if (playable) {
         v.eventMode = 'static';
         v.cursor = 'pointer';
-        v.on('pointertap', () => this.dispatch(playCard(this.state, this.deck, cardId, this.rng)));
+        v.on('pointertap', () => {
+          if (this.state.phase !== 'awaitCard' || this.state.energy <= 0) return;
+          this.dispatch(playCard(this.state, this.deck, cardId, this.rng));
+        });
       }
       // highlight the card awaiting its challenge
       if (this.state.pending?.cardId === cardId) v.y -= 24;
