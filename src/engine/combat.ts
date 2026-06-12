@@ -35,6 +35,8 @@ export type CombatEvent =
 export interface StartCombatArgs {
   cardIds: string[];
   levels: Record<string, number>;
+  /** Live reference — combat adds failed cards to this Set as it runs. Callers
+   *  wanting run-level isolation must pass a fresh copy (e.g. new Set(...)). */
   flagged: Set<string>;
   enemy: EnemyDef;
   playerHp: number;
@@ -52,7 +54,9 @@ function drawOne(s: CombatState, rng: Rng): string | null {
     s.discard = [];
   }
   const id = weightedPick(s.drawPile, (c) => (s.flagged.has(c) ? CONFIG.flaggedDrawWeight : 1), rng);
-  s.drawPile.splice(s.drawPile.indexOf(id), 1);
+  const drawIdx = s.drawPile.indexOf(id);
+  if (drawIdx === -1) throw new Error('drawOne: drew unknown card');
+  s.drawPile.splice(drawIdx, 1);
   return id;
 }
 
@@ -101,7 +105,9 @@ export function resolveChallenge(s: CombatState, chosenWord: string): CombatEven
   const { cardId, correctWord } = s.pending;
   const events: CombatEvent[] = [];
 
-  s.hand.splice(s.hand.indexOf(cardId), 1);
+  const idx = s.hand.indexOf(cardId);
+  if (idx === -1) throw new Error(`resolveChallenge: '${cardId}' not in hand`);
+  s.hand.splice(idx, 1);
   s.discard.push(cardId);
   s.energy -= 1;
   s.pending = null;
@@ -129,6 +135,7 @@ export function resolveChallenge(s: CombatState, chosenWord: string): CombatEven
 }
 
 export function endTurn(s: CombatState, rng: Rng): CombatEvent[] {
+  if (s.pending !== null) throw new Error('endTurn: pending challenge not resolved');
   if (s.phase !== 'awaitCard') throw new Error(`endTurn: wrong phase '${s.phase}'`);
   const events: CombatEvent[] = [];
 
@@ -141,6 +148,9 @@ export function endTurn(s: CombatState, rng: Rng): CombatEvent[] {
     return events;
   }
 
+  // Discard the hand and redraw. When the deck is no larger than the hand,
+  // drawToHandSize will immediately reshuffle the discard into the draw pile —
+  // intentional Slay-the-Spire-style cycling.
   s.discard.push(...s.hand);
   s.hand = [];
   const drawn = drawToHandSize(s, rng);

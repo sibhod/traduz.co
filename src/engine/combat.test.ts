@@ -116,6 +116,39 @@ describe('combat', () => {
     expect(() => playCard(s, deck, s.hand[0], mulberry32(1))).toThrow(/energy/i);
   });
 
+  it('endTurn throws if a challenge is still pending', () => {
+    const s = freshCombat();
+    const cardId = s.hand[0];
+    playCard(s, deck, cardId, mulberry32(2));
+    // s.phase is now 'awaitChallenge' and s.pending is set
+    expect(() => endTurn(s, mulberry32(3))).toThrow(/pending/i);
+  });
+
+  it('a fizzle on last HP loses', () => {
+    const s = freshCombat();
+    s.playerHp = CONFIG.fizzleSelfDamage; // exactly lethal on a fizzle
+    const cardId = s.hand[0];
+    playCard(s, deck, cardId, mulberry32(2));
+    const wrong = s.pending!.options.find((o) => o !== s.pending!.correctWord)!;
+    const events = resolveChallenge(s, wrong);
+    expect(s.phase).toBe('defeat');
+    expect(events.some((e) => e.type === 'defeat')).toBe(true);
+  });
+
+  it('reshuffles immediately at end of turn when all cards were in hand (StS-style)', () => {
+    // With a deck no larger than the hand, endTurn discards the hand and the
+    // redraw reshuffles those same cards — accepted Slay-the-Spire-style cycling.
+    const fiveIds = tenIds.slice(0, 5);
+    const { state: s } = startCombat({
+      cardIds: fiveIds, levels: {}, flagged: new Set(), enemy,
+      playerHp: CONFIG.playerMaxHp, rng: mulberry32(4),
+    });
+    expect(s.hand).toHaveLength(5);
+    endTurn(s, mulberry32(5));
+    expect(s.hand).toHaveLength(5); // same five cards, recycled
+    expect([...s.hand].sort()).toEqual([...fiveIds].sort());
+  });
+
   it('flagged cards draw with higher weight', () => {
     // statistical: flag one card, count how often it lands in opening hand
     const flaggedId = tenIds[9];
