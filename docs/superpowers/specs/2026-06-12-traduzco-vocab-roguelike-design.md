@@ -105,6 +105,16 @@ voice drop in later on a proven foundation without touching the game.
 Mitigation to raise the skill ceiling even in v0: make distractors **devious** —
 near-synonyms and words the player personally confuses, not random throwaways.
 
+**Diegetic presentation (intended v0 direction).** Rather than a sterile row of option
+buttons, the challenge is expressed *as combat*: the **monster presents the options
+itself** — thinking in image "thought bubbles" or speaking in word "speech bubbles" — and
+the player **drags/connects their card to the matching bubble** to land the blow. Same
+verifiable match mechanic underneath, but it feels like fighting, not quizzing. This gives
+a design knob for which direction the match runs:
+- **image-card → word-bubbles** (card shows the association image; pick the matching Spanish word), or
+- **word-card → image-bubbles** (card shows the word; pick the matching image).
+Tap-to-select and drag-to-connect are both acceptable implementations — to be playtested.
+
 ### Mastery & upgrade system (SRS in disguise)
 
 Spaced repetition and roguelike deckbuilding are the same shape, so we map them directly:
@@ -179,3 +189,8 @@ The loop demonstrably produces the **"one more run"** itch:
   comprehension), speed-translation rhythm game, living-city sim.
 - A richer roguelike with **enemy types that each demand a different skill** (vocab,
   listening, conjugation, full-sentence conversation judged live by an LLM).
+- **Softened translation in scaffolding moments (not the core loop).** The translation-free
+  rule holds for normal play, but *intro-a-new-concept* and *"you've completely blanked on
+  this"* assistance moments are where a light translation / explanation / nuanced
+  conjugation breakdown belongs — a natural fit for the LLM content engine, which is strong
+  at exactly this. Explicitly a future musing, not a v0 rescope.
