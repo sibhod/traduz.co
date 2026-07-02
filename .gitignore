@@ -143,6 +143,9 @@ vite.config.ts.timestamp-*
 .vite/
 /.worktrees/
 
+# Composed deploy artifact
+/site/
+
 # Local-only dev environment (never commit)
 .envrc
 .lxrc.yml
