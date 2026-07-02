@@ -6,7 +6,9 @@ settings:
 
 importers:
 
-  .:
+  .: {}
+
+  apps/mata-el-torre:
     dependencies:
       pixi.js:
         specifier: ^8.19.0
