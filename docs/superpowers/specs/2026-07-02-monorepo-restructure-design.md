@@ -1,7 +1,7 @@
 # Monorepo Restructure + Landing Page — Design
 
 **Date:** 2026-07-02
-**Status:** Awaiting review
+**Status:** Approved 2026-07-02 (incl. hosting/access revision)
 
 ## Goal
 
@@ -13,20 +13,28 @@ each get their own workspace under `apps/` (shared code, when it emerges, under
 
 ## Decisions
 
-Two decisions were confirmed with Eric; one was made by best judgment while he
-was away and is flagged for veto:
+All confirmed with Eric:
 
 1. **Scope (confirmed):** restructure + add a minimal landing page now. No
    shared-package extraction yet — the engine/progress/content code stays
    inside the game until a second consumer actually exists.
-2. **URL layout (best judgment — veto if wrong):** path-based on the existing
-   GitHub Pages deploy. Landing at `traduz.co/`, game at
-   `traduz.co/mata-el-torre/`. One Pages artifact composes both builds.
-   Alternatives considered: subdomain-per-app (needs DNS + separate
-   repos/hosts) and moving to Vercel/Netlify/Cloudflare (native monorepo
-   support, but a hosting migration is out of scope for this refactor). The
-   game already builds with `base: './'`, so it runs unchanged from a subpath.
-3. **Tooling (best judgment):** plain pnpm workspaces — no Turborepo or Nx.
+2. **URL layout (confirmed):** path-based. Landing at `traduz.co/`, game at
+   `traduz.co/mata-el-torre/`. One composed static site serves both builds.
+   Alternatives considered: subdomain-per-app (needs DNS per app and separate
+   projects). The game already builds with `base: './'`, so it runs unchanged
+   from a subpath.
+2a. **Hosting + access control (confirmed):** move from GitHub Pages to
+   **Cloudflare Pages with Cloudflare Access in front**. Eric does not want
+   the site publicly reachable yet; GitHub Pages has no access control at
+   all, so it is out. Cloudflare Access (free tier) gates the whole site at
+   the edge with an email one-time-code prompt against an allowlist — zero
+   app code. Clerk (or similar) arrives later as the *in-app* account system
+   when real user features exist; edge gating is the interim privacy layer,
+   and the two can coexist afterwards. Alternatives considered: Vercel
+   deployment protection (team-members-only on free tier; password
+   protection is paid) and client-side Clerk on static hosting (gates the UI
+   only — bundles stay fetchable — so it fails the actual requirement).
+3. **Tooling (confirmed):** plain pnpm workspaces — no Turborepo or Nx.
    With two small apps there is no task graph worth caching, and root
    `pnpm -r` scripts cover fan-out. Revisit only if build times or
    cross-package dependencies make it worthwhile.
@@ -90,23 +98,41 @@ landing design is its own future project.
 
 ### Deploy workflow
 
-Same trigger (push to main) and Pages actions; the build job becomes:
+The GitHub Pages workflow is replaced by a Cloudflare Pages deploy, still run
+from GitHub Actions on push to main (keeps CI test-gating in one place rather
+than using Cloudflare's git integration, which can't compose two builds):
 
 ```
 pnpm install --frozen-lockfile
-pnpm -r test
+pnpm -r test                      # red suite never ships
 pnpm -r build
 mkdir -p site
 cp -r apps/web/dist/*  site/
 mkdir -p site/mata-el-torre
 cp -r apps/mata-el-torre/dist/* site/mata-el-torre/
-# upload-pages-artifact with path: site
+npx wrangler pages deploy site --project-name traduzco
 ```
 
-The old game URL (`…/traduz.co/` root) becomes the landing page; the game
-moves to `…/mata-el-torre/`. Acceptable breakage at this stage (v0 playtest
-links only). LocalStorage progress is keyed per-origin, not per-path, so
-persisted mastery survives the move on the same origin.
+Requires two repo secrets: `CLOUDFLARE_API_TOKEN` (Pages edit permission) and
+`CLOUDFLARE_ACCOUNT_ID`.
+
+**One-time dashboard setup (Eric, manual):**
+
+1. Create the Cloudflare Pages project `traduzco` (direct-upload mode).
+2. In Zero Trust → Access, enable the Access policy on the Pages project
+   (protects `traduzco.pages.dev` *and* preview URLs) with an email allowlist
+   (Eric + testers). Login = email one-time code, no passwords to manage.
+3. Create the API token, add both secrets to the GitHub repo.
+4. Disable the old GitHub Pages site in repo settings so the public copy
+   stops being served.
+5. Later, when pointing the real domain: move traduz.co DNS to Cloudflare and
+   attach it as a custom domain (Access policy must then also cover that
+   hostname).
+
+The site initially lives at `traduzco.pages.dev` behind Access; the old
+public Pages URL goes dark. Existing playtest links break — acceptable (v0
+links only). Note localStorage is keyed per-origin, so persisted mastery from
+the old origin does **not** carry over to the new one; also acceptable at v0.
 
 ## Data flow / error handling
 
@@ -120,15 +146,18 @@ gates deploys.
 2. `pnpm -r test` — game suite passes unchanged.
 3. `pnpm -r build` — both apps emit `dist/`.
 4. Serve a locally composed `site/` dir and manually verify: landing loads at
-   `/`, game loads and plays at `/mata-el-torre/`, persisted mastery from a
-   pre-refactor session is still readable.
-5. Post-merge: check the live Pages deploy for both paths.
+   `/`, game loads and plays at `/mata-el-torre/`.
+5. Post-merge: on `traduzco.pages.dev`, verify an incognito visit hits the
+   Access email-code prompt (site is NOT publicly reachable), and that an
+   allowlisted login reaches both the landing page and the game.
 
 ## Out of scope
 
 - Shared `packages/*` extraction (engine, mastery, content types) — wait for a
   second consumer.
 - Real landing-page design.
-- Custom-domain DNS cutover to traduz.co (repo settings/DNS task, not a code
-  task; the relative-base builds are already compatible).
+- In-app user accounts (Clerk or similar) — that's the future account system;
+  Cloudflare Access is the interim privacy gate and coexists with it later.
+- Custom-domain DNS cutover to traduz.co (Cloudflare dashboard/DNS task, not
+  a code task; the relative-base builds are already compatible).
 - Turborepo/Nx, changesets, versioning — all YAGNI at two private apps.
