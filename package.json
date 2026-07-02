@@ -5,21 +5,13 @@
   "type": "module",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "dev": "vite --host",
-    "build": "tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "test": "vitest run --passWithNoTests",
-    "test:watch": "vitest"
-  },
-  "dependencies": {
-    "pixi.js": "^8.19.0"
+    "dev:web": "pnpm --filter @traduzco/web dev",
+    "dev:torre": "pnpm --filter @traduzco/mata-el-torre dev",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "build:site": "pnpm -r build && rm -rf site && mkdir -p site/mata-el-torre && cp -r apps/web/dist/. site/ && cp -r apps/mata-el-torre/dist/. site/mata-el-torre/"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
-  },
-  "devDependencies": {
-    "typescript": "^6.0.3",
-    "vite": "^8.0.16",
-    "vitest": "^4.1.8"
   }
 }
