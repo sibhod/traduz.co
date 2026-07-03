@@ -2,7 +2,7 @@ name: Deploy to Cloudflare Pages
 
 on:
   push:
-    branches: [main]
+    branches: [development]
   workflow_dispatch:
 
 concurrency:
@@ -29,4 +29,9 @@ jobs:
           # Must match the root devDependency — a mismatch makes the action
           # try to self-install, which fails in a pnpm workspace.
           wranglerVersion: "4.107.0"
-          command: pages deploy site --project-name=traduzco
+          # INTERIM: --branch=main targets the Pages project's production
+          # branch so traduz.co keeps updating after the repo's default
+          # branch was renamed to `development` (wrangler would otherwise
+          # infer `development` and create a preview deployment). The
+          # dev./staging./prod split is the upcoming deploy-workflow project.
+          command: pages deploy site --project-name=traduzco --branch=main

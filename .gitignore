@@ -149,3 +149,6 @@ vite.config.ts.timestamp-*
 # Local-only dev environment (never commit)
 .envrc
 .lxrc.yml
+
+# Clerk CLI repo-scoped config/credentials (CLERK_CONFIG_DIR)
+/.clerk/

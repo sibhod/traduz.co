@@ -12,18 +12,21 @@ real marketing design and real /home features come later.
 
 ## Decisions
 
-Eric was away for the framework question; all four calls below are
-best-judgment and flagged for veto:
+Revised 2026-07-03 after Eric's review:
 
-1. **React SPA (best judgment — veto if wrong).** `apps/web` becomes
-   Vite + React 19 + react-router 7 + `@clerk/clerk-react`. Clerk's
-   first-class SDK is React (`<SignInButton>`, `<UserButton>`,
-   `<SignedIn>/<SignedOut>` out of the box); the app will keep growing
-   account-facing UI, so the framework earns its keep now. Alternatives
-   considered: staying vanilla TS with `@clerk/clerk-js` (fewer deps, but
-   hand-rolled routing/guards/mounting forever), and a meta-framework
-   (Next/Astro — better marketing SEO later, but changes the static-compose
-   deploy story; revisit when marketing actually matters). The game app is
+1. **TanStack Start (Eric's call, revising the earlier React-SPA pick).**
+   `apps/web` becomes a TanStack Start app (React 19, file-based TanStack
+   Router routes, Vite plugin) with `@clerk/tanstack-react-start`. Eric wants
+   the future-proofing: routing, loaders, and a path to server functions
+   without a later framework migration. **Sub-decision (best judgment — veto
+   if wrong): the app runs in SPA/static mode**, emitting a static `dist/`
+   like any Vite build, because our deploy is static composition onto
+   Cloudflare Pages (landing + game in one artifact). Full SSR/server
+   functions would force a move to Cloudflare Workers — real work, zero
+   scaffold benefit today, and TanStack Start makes turning SSR on later a
+   config change rather than a rewrite. The `clerk-tanstack-patterns` and
+   `clerk-setup` agent skills (installed in-repo) are the reference for
+   integration specifics during planning/implementation. The game app is
    untouched Pixi.
 2. **Modal auth, no auth routes (best judgment).** Landing page has
    Sign up / Sign in buttons using Clerk's modal mode — no `/sign-in`
@@ -46,36 +49,55 @@ best-judgment and flagged for veto:
 
 ```
 apps/web/
-├── package.json            # + react, react-dom, react-router, @clerk/clerk-react; @vitejs/plugin-react
-├── vite.config.ts          # + react() plugin; base './' unchanged
-├── tsconfig.json           # + "jsx": "react-jsx" (only compiler addition)
-├── index.html              # <div id="root"> + module script src/main.tsx
+├── package.json            # + react, react-dom, @tanstack/react-router, @tanstack/react-start, @clerk/tanstack-react-start
+├── vite.config.ts          # tanstackStart() plugin, SPA/static output mode
+├── tsconfig.json           # + "jsx": "react-jsx" (plus whatever the Start plugin requires — see clerk-tanstack-patterns skill)
 └── src/
-    ├── main.tsx            # mount: ClerkProvider (key from env, fail fast) → BrowserRouter → App
-    ├── App.tsx             # routes: / → Landing, /home → RequireAuth(Home)
-    ├── pages/Landing.tsx   # attract placeholder: h1, tagline, SignUp/SignIn modal buttons; SignedIn users see a "Go to home" link instead
-    ├── pages/Home.tsx      # UserButton + APPS registry cards
-    ├── components/RequireAuth.tsx  # <SignedIn>{children}</SignedIn> + <SignedOut><RedirectToSignIn/></SignedOut>
-    ├── apps.ts             # registry paths become ABSOLUTE ('/mata-el-torre/') — relative paths mis-resolve from /home/-style URLs now that routes exist
+    ├── router.tsx / entry files   # per current TanStack Start scaffold conventions
+    ├── routes/
+    │   ├── __root.tsx      # ClerkProvider (key from env, fail fast) + outlet + shared shell
+    │   ├── index.tsx       # Landing: attract placeholder — h1, tagline, SignUp/SignIn modal buttons; SignedIn users see "Go to home"
+    │   └── home.tsx        # auth-guarded (SignedIn/SignedOut redirect pattern): UserButton + APPS registry cards
+    ├── apps.ts             # registry paths become ABSOLUTE ('/mata-el-torre/') — relative paths mis-resolve from /home-style URLs now that routes exist
     └── apps.test.ts        # updated to assert absolute-with-trailing-slash paths
 ```
+
+Exact entry-file names/config follow the current TanStack Start scaffold
+(the plan pins them; `clerk-tanstack-patterns` skill is the authority for
+the Clerk wiring). The guard uses Clerk's client components in SPA mode —
+`beforeLoad`-based server guards arrive with SSR later.
 
 - **Env:** `VITE_CLERK_PUBLISHABLE_KEY` read via `import.meta.env`;
   `main.tsx` throws a clear error at boot if missing. Locally:
   `apps/web/.env.local` (gitignored — already covered by `.env.*`). CI: a
   GitHub Actions **repository variable** (`vars.VITE_CLERK_PUBLISHABLE_KEY`,
   not a secret — the key is public by design) exported in the build step.
-- **Routing on static hosting:** BrowserRouter (clean URLs). Deep links like
-  `/home` work via Cloudflare Pages' built-in SPA fallback (unmatched paths
-  serve the root `index.html`). **Constraint: never add a catch-all
-  `_redirects` rule** — Pages redirects outrank static assets and a `/*`
-  rule would swallow `/mata-el-torre/`.
-- **Base path:** stays `'./'`… with one change: react-router's BrowserRouter
-  needs absolute asset URLs to survive deep links (`/home` would otherwise
-  request `./assets/…` relative to `/home`). So `apps/web` switches to
-  `base: '/'` (it is always served at the domain root — the relative base
-  was only load-bearing when it might live at a subpath). The game keeps
-  `base: './'` since it lives at a subpath.
+- **Routing on static hosting:** TanStack Router history routing (clean
+  URLs). Deep links like `/home` work via Cloudflare Pages' built-in SPA
+  fallback (unmatched paths serve the root `index.html`). **Constraint:
+  never add a catch-all `_redirects` rule** — Pages redirects outrank static
+  assets and a `/*` rule would swallow `/mata-el-torre/`.
+- **Base path:** `apps/web` builds at `base: '/'` (it is always served at
+  the domain root; a relative base would mis-resolve assets on `/home` deep
+  links). The game keeps `base: './'` since it lives at a subpath.
+
+## Branches & deploy (interim)
+
+The repo's default branch is now `development`; `production` exists for
+tested, versioned releases. The full model — `development` auto-deploys to
+dev.traduz.co, `production` deploys to traduz.co — is the **next project**
+(formal deploy workflow), not this one. Interim state so deploys don't stop:
+`deploy.yml` triggers on `development` and passes `--branch=main` to wrangler
+so pushes keep updating the Pages project's production branch (= traduz.co +
+pages.dev). Once dev.traduz.co exists, primary work targets it and
+`production` owns traduz.co.
+
+Clerk environments map onto this: the **development instance** (pk_test)
+serves local dev and, later, dev.traduz.co; the **production instance** is
+bound to traduz.co (Clerk free plan: one production domain). Production-
+instance DNS records go into Cloudflare as part of this project's setup
+(fetched via the repo-scoped Clerk CLI; records must be DNS-only/unproxied —
+Clerk issues its own certificates).
 
 ## Auth flow
 
@@ -97,23 +119,32 @@ Access = "is this a tester", Clerk = "which user".)
 ## Testing
 
 - `apps.test.ts` updated for absolute paths.
-- `RequireAuth` and Landing/Home rendering: component tests with
-  `@testing-library/react` + jsdom, mocking `@clerk/clerk-react` exports
-  (SignedIn/SignedOut render/hide children based on a mocked auth state) —
-  tests real routing/guard wiring without Clerk network calls.
+- Route-guard and Landing/Home rendering: component tests with
+  `@testing-library/react` + jsdom, mocking `@clerk/tanstack-react-start`
+  exports (SignedIn/SignedOut render/hide children based on a mocked auth
+  state) — tests real routing/guard wiring without Clerk network calls.
 - Manual verification: full modal sign-up → `/home` flow on a Clerk dev
   instance, locally and on the deployed site.
 
-## One-time setup (Eric, manual)
+## One-time setup
 
-1. Create a Clerk application (dashboard.clerk.com), development instance;
-   enable email (+ Google if desired).
-2. Copy the publishable key (`pk_test_…`) into:
-   - `apps/web/.env.local` → `VITE_CLERK_PUBLISHABLE_KEY=pk_test_…`
-   - GitHub repo → Settings → Variables → Actions →
-     `VITE_CLERK_PUBLISHABLE_KEY`
-3. In Clerk dashboard, add allowed origins: `http://localhost:5173`,
-   `https://traduzco.pages.dev`, `https://traduz.co`.
+Done by Eric (2026-07-03): Clerk app created; `VITE_CLERK_PUBLISHABLE_KEY`
+in `apps/web/.env.local` and in GitHub Actions repo variables; branches
+renamed (`development` default, `production` added).
+
+Remaining:
+
+1. **Repo-scoped Clerk CLI (no global auth):** `.envrc` (direnv, gitignored)
+   sets `CLERK_CONFIG_DIR=$PWD/.clerk` and `CLERK_PLATFORM_API_KEY` — env
+   keys outrank any global `clerk auth login`, so this account never leaks
+   outside the repo. Eric creates the Platform API key (Clerk dashboard →
+   workspace settings → Platform API keys) and fills in the commented line.
+2. **Production-instance DNS on traduz.co:** fetch the required records via
+   the CLI (`clerk deploy status` / domains API), add them in Cloudflare as
+   **DNS-only (unproxied)** CNAMEs, wait for Clerk validation.
+3. In Clerk dashboard, allowed origins for the dev instance:
+   `http://localhost:5173` (or the Start dev port), `https://traduzco.pages.dev`,
+   later `https://dev.traduz.co`.
 
 ## Out of scope
 
