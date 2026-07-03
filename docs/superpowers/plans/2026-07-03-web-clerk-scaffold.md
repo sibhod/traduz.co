@@ -4,16 +4,16 @@
 
 **Goal:** Rebuild `apps/web` as a TanStack Start SPA with Clerk auth: attract placeholder at `/`, modal sign-up/sign-in, authenticated `/home` showing the app registry.
 
-**Architecture:** TanStack Start in SPA/static mode (`tanstackStart({ spa: { enabled: true } })`) — file-based routes, prerendered shell, pure static output that drops into the existing `build:site` composition on Cloudflare Pages. Clerk runs fully client-side via `@clerk/clerk-react` (the Start-specific Clerk package is server-only value — see spec); `/home` is gated with `<SignedIn>/<SignedOut>`.
+**Architecture:** TanStack Start in SPA/static mode (`tanstackStart({ spa: { enabled: true } })`) — file-based routes, prerendered shell, pure static output that drops into the existing `build:site` composition on Cloudflare Pages. Clerk runs fully client-side via `@clerk/react` (the Start-specific Clerk package is server-only value — see spec); `/home` is gated with `<SignedIn>/<SignedOut>`.
 
-**Tech Stack:** TanStack Start 1.168.x + TanStack Router 1.170.x, React 19.2, @clerk/clerk-react 5.61.x, Vite 8, Vitest 4 + Testing Library + jsdom, pnpm workspaces.
+**Tech Stack:** TanStack Start 1.168.x + TanStack Router 1.170.x, React 19.2, @clerk/react 6.11.x (Core 3 — replaces deprecated @clerk/clerk-react), Vite 8, Vitest 4 + Testing Library + jsdom, pnpm workspaces.
 
 **Spec:** `docs/superpowers/specs/2026-07-03-web-clerk-scaffold-design.md`
 
 ## Global Constraints
 
 - Package `@traduzco/web`: `"private": true`, `"version": "0.0.0"`, `"type": "module"`. No `packageManager`/`engines` (root-only).
-- Pinned dep ranges (verified against the registry 2026-07-03): `@tanstack/react-start` `^1.168.27`, `@tanstack/react-router` `^1.170.17`, `@clerk/clerk-react` `^5.61.3`, `react`/`react-dom` `^19.2.7`, `@vitejs/plugin-react` `^6.0.3`, `jsdom` `^29.1.1`, `@testing-library/react` `^16.3.2`; `typescript` `^6.0.3`, `vite` `^8.0.16`, `vitest` `^4.1.8` (same as the game app).
+- Pinned dep ranges (verified against the registry 2026-07-03): `@tanstack/react-start` `^1.168.27`, `@tanstack/react-router` `^1.170.17`, `@clerk/react` `^6.11.3`, `react`/`react-dom` `^19.2.7`, `@vitejs/plugin-react` `^6.0.3`, `jsdom` `^29.1.1`, `@testing-library/react` `^16.3.2`; `typescript` `^6.0.3`, `vite` `^8.0.16`, `vitest` `^4.1.8` (same as the game app).
 - `apps/web/tsconfig.json` extends `../../tsconfig.base.json`; only additions allowed: `jsx`, `types`, `include`.
 - Publishable key: `import.meta.env.VITE_CLERK_PUBLISHABLE_KEY`, fail fast at boot with the variable name if missing. Never hardcode keys. `apps/web/.env.local` already exists (gitignored) with the dev-instance `pk_test_` key.
 - **Never add a catch-all `_redirects` file** — Cloudflare Pages redirects outrank static assets and would swallow `/mata-el-torre/`. Deep links rely on Pages' built-in SPA fallback.
@@ -58,7 +58,7 @@ git switch development && git pull && git switch -c feature/web-clerk-scaffold
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@clerk/clerk-react": "^5.61.3",
+    "@clerk/react": "^6.11.3",
     "@tanstack/react-router": "^1.170.17",
     "@tanstack/react-start": "^1.168.27",
     "react": "^19.2.7",
@@ -357,7 +357,7 @@ export function clerkPublishableKey(): string {
 
 - [ ] **Step 2: Failing landing test** (`apps/web/src/routes/index.test.tsx`, full content)
 
-The test mocks `@clerk/clerk-react` so no network/key is needed; it verifies the signed-out landing shows both modal buttons and the signed-in landing shows the home link instead.
+The test mocks `@clerk/react` so no network/key is needed; it verifies the signed-out landing shows both modal buttons and the signed-in landing shows the home link instead.
 
 ```tsx
 import { describe, expect, it, vi, beforeEach } from 'vitest';
@@ -366,7 +366,7 @@ import type { ReactNode } from 'react';
 
 const authState = { signedIn: false };
 
-vi.mock('@clerk/clerk-react', () => ({
+vi.mock('@clerk/react', () => ({
   SignedIn: ({ children }: { children: ReactNode }) => (authState.signedIn ? children : null),
   SignedOut: ({ children }: { children: ReactNode }) => (authState.signedIn ? null : children),
   SignInButton: ({ children }: { children: ReactNode }) => children,
@@ -417,7 +417,7 @@ Expected: FAIL — `LandingPage` is not exported / auth buttons don't exist yet.
 
 ```tsx
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { SignedIn, SignedOut, SignInButton, SignUpButton } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, SignInButton, SignUpButton } from '@clerk/react';
 
 export const Route = createFileRoute('/')({
   component: LandingPage,
@@ -451,7 +451,7 @@ export function LandingPage() {
 - [ ] **Step 4: Wrap the app in ClerkProvider** — in `apps/web/src/routes/__root.tsx`, add imports and change ONLY `RootDocument`'s body:
 
 ```tsx
-import { ClerkProvider } from '@clerk/clerk-react';
+import { ClerkProvider } from '@clerk/react';
 import { clerkPublishableKey } from '../clerk';
 ```
 
@@ -516,7 +516,7 @@ import type { ReactNode } from 'react';
 
 const authState = { signedIn: true };
 
-vi.mock('@clerk/clerk-react', () => ({
+vi.mock('@clerk/react', () => ({
   SignedIn: ({ children }: { children: ReactNode }) => (authState.signedIn ? children : null),
   SignedOut: ({ children }: { children: ReactNode }) => (authState.signedIn ? null : children),
   RedirectToSignIn: () => <div data-testid="redirect-to-sign-in" />,
@@ -556,7 +556,7 @@ Plain `<a>` tags are correct for the app cards — they leave the SPA for a stat
 
 ```tsx
 import { createFileRoute } from '@tanstack/react-router';
-import { RedirectToSignIn, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+import { RedirectToSignIn, SignedIn, SignedOut, UserButton } from '@clerk/react';
 import { APPS } from '../apps';
 
 export const Route = createFileRoute('/home')({
