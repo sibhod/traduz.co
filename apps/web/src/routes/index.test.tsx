@@ -11,19 +11,6 @@ vi.mock('@clerk/react', () => ({
   SignUpButton: ({ children }: { children: ReactNode }) => children,
 }));
 
-// Route files import the router; mock the Link to a plain anchor.
-vi.mock('@tanstack/react-router', async () => {
-  const actual = await vi.importActual<object>('@tanstack/react-router');
-  return {
-    ...actual,
-    Link: ({ to, children, ...rest }: { to: string; children: ReactNode }) => (
-      <a href={to} {...rest}>
-        {children}
-      </a>
-    ),
-  };
-});
-
 import { LandingPage } from './index';
 
 describe('LandingPage', () => {
@@ -42,7 +29,8 @@ describe('LandingPage', () => {
   it('signed in: shows the home link instead of auth buttons', () => {
     authState.signedIn = true;
     render(<LandingPage />);
-    expect(screen.getByRole('link', { name: 'Go to home' })).toBeDefined();
+    const homeLink = screen.getByRole('link', { name: 'Go to home' });
+    expect(homeLink.getAttribute('href')).toBe('/home');
     expect(screen.queryByRole('button', { name: 'Sign up' })).toBeNull();
   });
 });
