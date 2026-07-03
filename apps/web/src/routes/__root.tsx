@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 import { HeadContent, Outlet, Scripts, createRootRoute } from '@tanstack/react-router';
+import { ClerkProvider } from '@clerk/react';
+import { clerkPublishableKey } from '../clerk';
 
 export const Route = createRootRoute({
   head: () => ({
@@ -34,7 +36,14 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
         <style>{css}</style>
       </head>
       <body>
-        {children}
+        <ClerkProvider
+          publishableKey={clerkPublishableKey()}
+          signInFallbackRedirectUrl="/home"
+          signUpFallbackRedirectUrl="/home"
+          afterSignOutUrl="/"
+        >
+          {children}
+        </ClerkProvider>
         <Scripts />
       </body>
     </html>
