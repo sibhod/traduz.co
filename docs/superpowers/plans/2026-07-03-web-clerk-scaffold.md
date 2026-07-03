@@ -94,7 +94,12 @@ export default defineConfig({
   plugins: [
     // SPA/static mode: prerendered shell + client bundle, no server output
     // to deploy. MUST come before viteReact().
-    tanstackStart({ spa: { enabled: true } }),
+    // outputPath '/index': the default '/_shell' emits _shell.html and
+    // expects a catch-all rewrite — forbidden here (a Pages catch-all
+    // would swallow /mata-el-torre/). '/index' makes the shell BE the
+    // site's index.html, which Cloudflare Pages' built-in SPA fallback
+    // serves for unmatched deep links like /home.
+    tanstackStart({ spa: { enabled: true, prerender: { outputPath: '/index' } } }),
     viteReact(),
   ],
   server: { host: true },
@@ -305,7 +310,7 @@ pnpm --filter @traduzco/web build
 find apps/web/dist -name 'index.html' | head -5
 ```
 
-Expected: build green (the plugin generates `src/routeTree.gen.ts` first), and `apps/web/dist/client/index.html` exists. If the html landed directly at `apps/web/dist/index.html` instead (plugin minor-version drift), note the actual path in your report — Task 4 pins the compose path and must match reality. Also check the shell got prerendered with our content:
+Expected: build green (the plugin generates `src/routeTree.gen.ts` first), and `apps/web/dist/client/index.html` exists. If the plugin's zod schema rejects the partial `prerender: { outputPath: '/index' }` input, fall back to keeping `spa: { enabled: true }` and appending a copy step to the package `build` script instead: `"build": "vite build && tsc --noEmit && cp dist/client/_shell.html dist/client/index.html"`. Either way the deliverable is `apps/web/dist/client/index.html`; note which mechanism won in your report — Task 4 pins the compose path and must match reality. Also check the shell got prerendered with our content:
 
 ```bash
 rg -c 'traduzco' apps/web/dist/client/index.html
