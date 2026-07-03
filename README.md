@@ -5,7 +5,7 @@ learning (B2–C1+).
 
 | App | Path | What |
 | --- | --- | --- |
-| `apps/web` | `/` | Landing page / app index |
+| `apps/web` | `/` | traduz.co app: attract page + Clerk auth + `/home` (TanStack Start SPA) |
 | `apps/mata-el-torre` | `/mata-el-torre/` | Vocabulary roguelike. Your words as cards; recall is the casting cost. |
 
 Shared code will live in `packages/*` when something earns extraction.
@@ -15,15 +15,19 @@ Shared code will live in `packages/*` when something earns extraction.
 ```bash
 pnpm install
 pnpm dev:torre   # the game (serves on LAN — open the printed URL on your phone)
-pnpm dev:web     # the landing page
+pnpm dev:web     # the traduz.co app (attract page + Clerk auth + /home)
 pnpm test        # all workspace test suites
 pnpm build       # typecheck + build every app
-pnpm build:site  # compose the deployable site/ dir (landing at /, game at /mata-el-torre/)
+pnpm build:site  # compose the deployable site/ dir (web app at /, game at /mata-el-torre/)
 ```
+
+`apps/web` needs `VITE_CLERK_PUBLISHABLE_KEY` (see `apps/web/.env.local`;
+CI uses a GitHub Actions repo variable). Missing key = loud build failure
+by design.
 
 ## Deploy
 
-Push to `main` → GitHub Actions tests, builds, composes `site/`, and deploys
+Push to `development` → GitHub Actions tests, builds, composes `site/`, and deploys
 to Cloudflare Pages (project `traduzco`), which sits behind **Cloudflare
 Access** — the site is not publicly reachable; visitors get an email
 one-time-code prompt against an allowlist.

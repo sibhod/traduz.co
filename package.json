@@ -9,7 +9,7 @@
     "dev:torre": "pnpm --filter @traduzco/mata-el-torre dev",
     "test": "pnpm -r test",
     "build": "pnpm -r build",
-    "build:site": "pnpm -r build && rm -rf site && mkdir -p site/mata-el-torre && cp -r apps/web/dist/. site/ && cp -r apps/mata-el-torre/dist/. site/mata-el-torre/"
+    "build:site": "pnpm -r build && rm -rf site && mkdir -p site/mata-el-torre && cp -r apps/web/dist/client/. site/ && cp -r apps/mata-el-torre/dist/. site/mata-el-torre/"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

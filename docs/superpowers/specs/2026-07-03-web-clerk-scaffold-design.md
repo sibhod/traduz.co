@@ -29,7 +29,7 @@ Revised 2026-07-03 after Eric's review:
    integration specifics during planning/implementation. **Clerk package
    note (from that skill):** `@clerk/tanstack-react-start`'s value is
    server-side (`clerkMiddleware`, `auth()`) and inert in SPA/static mode,
-   so the scaffold uses `@clerk/clerk-react` directly (client-side provider
+   so the scaffold uses `@clerk/react` directly (client-side provider
    + components); swap to the Start package when SSR turns on. The game app
    is untouched Pixi.
 2. **Modal auth, no auth routes (best judgment).** Landing page has
