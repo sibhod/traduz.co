@@ -26,8 +26,12 @@ Revised 2026-07-03 after Eric's review:
    scaffold benefit today, and TanStack Start makes turning SSR on later a
    config change rather than a rewrite. The `clerk-tanstack-patterns` and
    `clerk-setup` agent skills (installed in-repo) are the reference for
-   integration specifics during planning/implementation. The game app is
-   untouched Pixi.
+   integration specifics during planning/implementation. **Clerk package
+   note (from that skill):** `@clerk/tanstack-react-start`'s value is
+   server-side (`clerkMiddleware`, `auth()`) and inert in SPA/static mode,
+   so the scaffold uses `@clerk/clerk-react` directly (client-side provider
+   + components); swap to the Start package when SSR turns on. The game app
+   is untouched Pixi.
 2. **Modal auth, no auth routes (best judgment).** Landing page has
    Sign up / Sign in buttons using Clerk's modal mode — no `/sign-in`
    routes to build or style. `signInFallbackRedirectUrl` /
