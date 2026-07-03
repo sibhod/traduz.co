@@ -4,6 +4,18 @@ import type { ReactNode } from 'react';
 
 const authState = { signedIn: false };
 
+vi.mock('@tanstack/react-router', async (importActual) => {
+  const actual = await importActual<typeof import('@tanstack/react-router')>();
+  return {
+    ...actual,
+    Link: ({ to, className, children }: { to: string; className?: string; children: ReactNode }) => (
+      <a href={to} className={className}>
+        {children}
+      </a>
+    ),
+  };
+});
+
 vi.mock('@clerk/react', () => ({
   Show: ({ when, children }: { when: 'signed-in' | 'signed-out'; children: ReactNode }) =>
     (when === 'signed-in') === authState.signedIn ? children : null,

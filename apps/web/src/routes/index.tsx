@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute } from '@tanstack/react-router';
 import { Show, SignInButton, SignUpButton } from '@clerk/react';
 
 export const Route = createFileRoute('/')({
@@ -21,10 +21,9 @@ export function LandingPage() {
         </div>
       </Show>
       <Show when="signed-in">
-        {/* becomes <Link> once the /home route lands (next task) */}
-        <a className="cta" href="/home">
+        <Link className="cta" to="/home">
           Go to home
-        </a>
+        </Link>
       </Show>
     </main>
   );
