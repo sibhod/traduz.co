@@ -1,12 +1,17 @@
-name: Deploy to Cloudflare Pages
+name: Deploy
 
 on:
   push:
-    branches: [main]
+    branches: [development, production]
+  pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write        # production auto-tag push
+  pull-requests: write   # sticky preview comment
+
 concurrency:
-  group: deploy
+  group: deploy-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.number) || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -21,7 +26,27 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test # red suite never ships
+
+      - name: Resolve deploy target
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "branch=pr-${{ github.event.number }}" >> "$GITHUB_OUTPUT"
+            echo "env=dev" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.ref_name }}" = "production" ]; then
+            echo "branch=production" >> "$GITHUB_OUTPUT"
+            echo "env=prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "branch=development" >> "$GITHUB_OUTPUT"
+            echo "env=dev" >> "$GITHUB_OUTPUT"
+          fi
+
       - run: pnpm build:site
+        env:
+          # prod deploys use the production Clerk instance (bound to traduz.co);
+          # everything else uses the dev instance (pk_test works from any origin).
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ steps.target.outputs.env == 'prod' && vars.VITE_CLERK_PUBLISHABLE_KEY_PROD || vars.VITE_CLERK_PUBLISHABLE_KEY_DEV }}
+
       - uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -29,4 +54,27 @@ jobs:
           # Must match the root devDependency — a mismatch makes the action
           # try to self-install, which fails in a pnpm workspace.
           wranglerVersion: "4.107.0"
-          command: pages deploy site --project-name=traduzco
+          command: pages deploy site --project-name=traduzco --branch=${{ steps.target.outputs.branch }}
+
+      - name: Tag release (CalVer)
+        if: github.event_name == 'push' && github.ref_name == 'production'
+        run: |
+          base="v$(date -u +%Y.%m.%d)"
+          tag="$base"; n=1
+          while [ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ]; do
+            n=$((n+1)); tag="$base-$n"
+          done
+          git tag "$tag"
+          git push origin "$tag"
+          echo "Tagged $tag" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: PR preview comment (sticky)
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          url="https://${{ steps.target.outputs.branch }}.traduzco.pages.dev"
+          body="🎴 Preview deployed: ${url} (Cloudflare Access gated)
+          Updated for $(git rev-parse --short HEAD)."
+          gh pr comment "${{ github.event.number }}" --edit-last --body "$body" \
+            || gh pr comment "${{ github.event.number }}" --body "$body"
