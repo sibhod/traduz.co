@@ -27,23 +27,19 @@ by design.
 
 ## Deploy
 
-Push to `development` → GitHub Actions tests, builds, composes `site/`, and deploys
-to Cloudflare Pages (project `traduzco`), which sits behind **Cloudflare
-Access** — the site is not publicly reachable; visitors get an email
-one-time-code prompt against an allowlist.
+Branch-based via Cloudflare Pages (project `traduzco`), all from GitHub
+Actions:
 
-One-time setup (dashboard, manual):
+| Push to | Deploys to | Clerk instance | Visibility |
+| --- | --- | --- | --- |
+| `development` | dev.traduz.co | dev (`pk_test`) | Cloudflare Access gated |
+| `production` | traduz.co (+ CalVer tag `vYYYY.MM.DD`) | prod (`pk_live`) | public |
+| any PR | `pr-<n>.traduzco.pages.dev` (sticky PR comment) | dev | Access gated |
 
-1. Cloudflare → Workers & Pages → create Pages project `traduzco`
-   (direct upload).
-2. Zero Trust → Access → Applications: add the Pages project
-   (covers `traduzco.pages.dev` + preview URLs) with an email-allowlist
-   policy (one-time-PIN login).
-3. Create an API token with Cloudflare Pages edit permission; add repo
-   secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
-4. GitHub repo settings → Pages: disable the old GitHub Pages site.
-5. Later, for traduz.co itself: move DNS to Cloudflare, attach the custom
-   domain to the Pages project, and extend the Access app to that hostname.
+Release = merge `development` → `production` and push; the workflow deploys
+and tags. All `*.traduzco.pages.dev` URLs sit behind the Pages Access
+policy; traduz.co is the only public hostname. Never add a catch-all
+`_redirects` — it would swallow `/mata-el-torre/`.
 
 ## Mata el Torre
 
