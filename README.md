@@ -75,3 +75,5 @@ thresholds are in `apps/mata-el-torre/src/progress/mastery.ts`
 ## Repo layout
 
 Monorepo spec: `docs/superpowers/specs/2026-07-02-monorepo-restructure-design.md`
+
+<!-- pr-preview smoke test -->
